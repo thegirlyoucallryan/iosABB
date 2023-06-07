@@ -1,0 +1,22 @@
+{  "extends":"../packages/ui/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./src/*"]
+    },
+    "jsx": "react-native",
+    "types": ["nativewind/types", "webpack-env"],
+    "typeRoots": ["./src/types"],
+  },
+  "include": [
+    "expo-plugins",
+    "src",
+    "*.ts",
+    "*.tsx",
+    "**/*.js",
+    "index.tsx",
+    "../../packages/firebase/FirebaseConfig.ts",
+    "../../packages/firebase/FirebaseCloudService.ts"
+  ],
+  "exclude": ["node_modules"]
+}
