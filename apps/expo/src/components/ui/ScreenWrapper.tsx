@@ -1,7 +1,7 @@
 import { View, StyleSheet } from "react-native";
 import { Colors } from "~/constants/colors";
 
-export const ScreenWrapper = ({ children }) => {
+export const ScreenWrapper = ({ children }: React.PropsWithChildren) => {
   return <View style={styles.container}>{children}</View>;
 };
 

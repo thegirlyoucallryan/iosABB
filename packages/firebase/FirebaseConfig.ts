@@ -1,9 +1,10 @@
 
-import { getStorage } from "firebase/storage";
+
+
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
-
+import "firebase/compat/storage";
 
 // TODO: Replace the following with your app's Firebase project configuration
 // See: https://firebase.google.com/docs/web/learn-more#config-object
@@ -20,6 +21,6 @@ import 'firebase/compat/firestore';
   // Initialize Firebase
  export const fbApp = firebase.initializeApp(firebaseConfig);
   
-  
+
   // Initialize Cloud Storage and get a reference to the service
- export const storage = getStorage(fbApp);
+ export const storage = firebase.storage();

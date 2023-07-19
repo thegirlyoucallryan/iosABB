@@ -1,13 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRootNavigationState, useRouter, useSegments } from "expo-router";
-import { Provider, useSelector } from "react-redux";
+import { Provider} from "react-redux";
 
-import { store } from "../store/store";
+import { store } from "../../../../packages/store/store";
+import { useAppSelector } from "./hooks/hooks";
+import { QueryClientProvider, QueryClient } from "react-query";
 
 export default function index({ children }: React.PropsWithChildren) {
   const segments = useSegments();
   const router = useRouter();
-  const { isAuthenticated } = useSelector((s) => s.isAuthenticated);
+  const { isAuthenticated } = useAppSelector((s) => s.isAuthenticated);
 
   const navState = useRootNavigationState();
   useEffect(() => {
@@ -26,5 +28,11 @@ export default function index({ children }: React.PropsWithChildren) {
       router.replace("/(main)/Home");
     }
   }, [segments, isAuthenticated]);
-  return <Provider store={store}>{children}</Provider>;
+
+  const [queryClient] = useState(() => new QueryClient());
+  return (
+    <Provider store={store}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </Provider>
+  );
 }

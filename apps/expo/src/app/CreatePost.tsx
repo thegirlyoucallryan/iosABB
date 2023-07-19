@@ -1,48 +1,57 @@
 import { Text, StyleSheet, View, Pressable, ScrollView } from "react-native";
-
 import { PrimaryBtn } from "~/components/HOC/Button";
 import ImageSelector from "~/components/ImageSelector";
 import { Colors } from "~/constants/colors";
 import Input from "~/components/HOC/Input";
-import FbFirestoreService from "../../../../packages/firebase/FirebaseCloudService";
-import { useState } from "react";
-import { useSelector } from "react-redux";
-import { useQueryClient } from "@tanstack/react-query";
+import FbFirestoreService, { firestore } from "../../../../packages/firebase/FirebaseCloudService";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "react-query";
 import { useNavigation } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { Toast } from "react-native-toast-message/lib/src/Toast";
-import { Header } from "react-native/Libraries/NewAppScreen";
-import { Icon } from "~/components/Icon";
+import { ImageType } from "~/components/AddForm";
+import { useAppSelector } from "./hooks/hooks";
+import uuid from "react-native-uuid";
+import {  Timestamp } from "firebase/firestore";
 
 const CreatePost = () => {
   const nav = useNavigation();
-  const [name, setName] = useState<string>("");
+  // const [name, setName] = useState<string>("");
   const [caption, setCaption] = useState<string>("");
-  const [image, setImage] = useState("");
+  const [image, setImage] = useState<ImageType>({ url: "", type: "" });
 
-  nav.setOptions({
-    headerShown: true,
-    headerStyle: {
-      backgroundColor: Colors.backgroundBlk,
-    },
-    headerTitleStyle: { color: Colors.primaryLight, fontFamily: "Prata" },
-    headerTintColor: Colors.primaryGreen,
-    headerTitle: "Create a post",
-  });
+  useEffect(() => {
+    nav.setOptions({
+      headerShown: true,
+      headerStyle: {
+        backgroundColor: Colors.backgroundBlk,
+      },
+      headerTitleStyle: { color: Colors.primaryLight, fontFamily: "Prata" },
+      headerTintColor: Colors.primaryGreen,
+      headerTitle: "Create a post",
+    });
+  }, []);
 
-  const apparatus = useSelector((state) => state.user.apparatus);
+  const apparatus = useAppSelector((state) => state.user.apparatus);
 
   const auth = getAuth();
 
   const queryClient = useQueryClient();
 
-  const imageHandler = (imageUri) => {
-    setImage(imageUri);
+  const imageHandler = (image: ImageType) => {
+    setImage({ url: image!.url, type: image!.type });
   };
 
-  async function handleCreatePost({ name, caption }) {
+  async function handleCreatePost({
+    // name,
+    caption,
+  }: {
+    // name: string;
+    caption: string;
+  }) {
     const user = auth.currentUser;
-    if (!name || !caption || !image) {
+
+    if (!caption || !image?.url) {
       Toast.show({
         type: "error",
         text1: "Woops!",
@@ -50,32 +59,43 @@ const CreatePost = () => {
       });
       return;
     }
+
+    const uid = uuid.v4().toString()
+
     const newPost = {
-      user: user.displayName,
-      name,
+      createdAt: Timestamp.now(),
+      id: uid,
+      user: user!.displayName as string,
       caption,
-      imageUrl: image,
+      image: { url: image.url, type: image.type },
+      likes: [],
+      comments: [],
+      setToTrain: [],
+      isSetToTrainByUser: [],
+      isLikedByUser: false,
     };
 
+
+   
     try {
-      await FbFirestoreService.createDocument(`${apparatus}`, newPost).then(
-        () => {
-          Toast.show({
-            type: "success",
-            text1: "Success",
-            text2: "post successfully created",
-          });
-        }
-      );
-    } catch (errorText) {
+      await FbFirestoreService.createDocument(`${apparatus}`, newPost, uid).then(() => {
+        Toast.show({
+          type: "success",
+          text1: "Success",
+          text2: "post successfully created",
+        });
+      });
+    } catch (errorText: any) {
       Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: errorText.message,
+        type: "error",
+        text1: "Something went wrong, please try again",
+        text2: errorText?.message,
       });
     } finally {
       queryClient
-        .invalidateQueries({ queryKey: ["posts"] })
+
+        .refetchQueries(["posts"])
+        .then(() => queryClient.invalidateQueries(["posts"]))
         .then(() => nav.navigate("Home"));
     }
   }
@@ -91,7 +111,7 @@ const CreatePost = () => {
     >
       <Text style={styles.add}>Create Post</Text>
       <View style={styles.form}>
-        <Input
+        {/* <Input
           label="Name"
           textInputConfig={{
             autoFocus: true,
@@ -104,7 +124,11 @@ const CreatePost = () => {
               setName(text.charAt(0).toUpperCase() + text.slice(1));
             },
           }}
-        />
+        /> */}
+
+        <View className="w-full rounded-sm ">
+          <ImageSelector onTakeImage={imageHandler} basePath="Posts" />
+        </View>
         <Input
           label="Caption"
           textInputConfig={{
@@ -119,16 +143,11 @@ const CreatePost = () => {
             },
           }}
         />
-
-        <View>
-          <ImageSelector onTakeImage={imageHandler} basePath="Posts" />
-        </View>
-
         <View style={{ width: "60%", alignSelf: "center", margin: 12 }}>
           <PrimaryBtn
             text="Post"
             onPress={() => {
-              handleCreatePost({ name, caption });
+              handleCreatePost({ caption });
             }}
           />
         </View>

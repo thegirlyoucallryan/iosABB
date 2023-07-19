@@ -1,14 +1,19 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import SelectDropdown from "react-native-select-dropdown";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-
-import { useSelector } from "react-redux";
-
 import { Colors } from "~/constants/colors";
 import { PrimaryBtn } from "./HOC/Button";
 import Input from "./HOC/Input";
 import ImageSelector from "./ImageSelector";
+import { useAppSelector } from "~/app/hooks/hooks";
+import { Timestamp } from "firebase/firestore";
+
+export type ImageType = {
+  url: string,
+  type: string
+  } | null
+
 
 function AddForm({
   onSave,
@@ -19,33 +24,39 @@ function AddForm({
   onSave: (trick: any) => void;
   dropDownOptions: string[];
   isEditing?: boolean;
-  trick: any;
+  trick?: any;
 }) {
+
+  console.log(isEditing, trick, 'isEditing')
   const [title, setTitle] = useState<{ title: string; isValid: boolean }>(
     isEditing
       ? { title: trick?.title, isValid: true }
       : { title: "", isValid: true },
   );
   const [notes, setNotes] = useState<string>(
-    isEditing ? trick.notes : undefined,
-  );
-  const [preRex, setPreRex] = useState<string>(isEditing ? trick.preRex : "");
+   isEditing ? trick?.notes
+ : '' );
+  
   const [type, setType] = useState<{ type: string; isValid: boolean }>(
     isEditing
-      ? { type: trick.type, isValid: true }
+      ? { type: trick?.type, isValid: true }
       : { type: "", isValid: true },
   );
   const [image, setImage] = useState(
     isEditing
-      ? { image: trick.image, isValid: true }
-      : { image: "", isValid: true },
+      ? { image: trick?.image?.url, isValid: true, type: trick?.image?.type }
+      : { image: "", isValid: true, type: '' },
   );
-  const tricks = useSelector((state) => state.tricks.tricks);
+  const tricks = useAppSelector((state) => state.tricks.tricks);
   const nextNumber = +tricks.length + 1;
-
-  const imageHandler = (imageUri) => {
-    console.log(imageUri, 'imguri')
-    setImage({ image: imageUri, isValid: true });
+  const dropdownRef = useRef<SelectDropdown>(null)
+  const [clearImage, setClearImage] = useState<boolean>(false)
+  const imageHandler = (image: ImageType) => {
+    console.log(image!.url, 'imguri')
+    if(image?.url){
+      
+    setImage({ image: image?.url, isValid: true, type: image?.type });
+    }
   };
 
   function createNewBookEntry() {
@@ -54,28 +65,27 @@ function AddForm({
       trickData = {
         title: title.title,
         type: type.type,
-        image: image.image,
-        notes: notes,
-        preRex: preRex,
-        date: trick.date,
+        image: {url: image?.image, type: image?.type},
+        notes:notes,
         id: trick.id,
+        editedLast: Timestamp.now(),
+        createdAt: trick.createdAt,
       };
     } else {
       trickData = {
         title: title.title,
         type: type.type,
-        image: image.image,
-        notes,
-        preRex,
-        date: new Date().toDateString(),
+        image:{url: image?.image, type: image?.type},
+        notes : notes,
+        createdAt: Timestamp.now()
       };
     }
 
     const titleIsValid = trickData.title.length > 1;
-    const imageIsValid = trickData.image.length > 10;
+    const imageIsValid = !!trickData.image?.url
     const typeIsValid = trickData.type !== null;
 
-    if (!titleIsValid || !titleIsValid || !typeIsValid) {
+    if (!titleIsValid || !imageIsValid || !typeIsValid) {
       setTitle((current) => {
         return {
           title: current.title,
@@ -84,8 +94,9 @@ function AddForm({
       });
       setImage((current) => {
         return {
-          image: current.image,
+          image: current.image.url,
           isValid: imageIsValid,
+          type: current.image.type
         };
       });
       setType((current) => {
@@ -98,6 +109,12 @@ function AddForm({
     }
 
     onSave(trickData);
+    setTitle({title: '', isValid: true})
+    setType({type: '', isValid: true})
+    setNotes('')
+    setImage({image: '', type: '', isValid: true})
+    dropdownRef.current?.reset()
+    setClearImage(true)
   }
 
   return (
@@ -120,7 +137,7 @@ function AddForm({
 
           placeholderTextColor: Colors.primaryGreen,
           onChangeText: (text: string) => {
-            setTitle({ title: text, isValid: true });
+            setTitle({ title: text.charAt(0).toUpperCase() + text.slice(1), isValid: true });
           },
           value: title.title,
           invalid: { title: title.isValid },
@@ -173,9 +190,11 @@ function AddForm({
         Type
       </Text>
       <SelectDropdown
+        ref={dropdownRef}
         data={dropDownOptions}
+      
         onSelect={(value) =>
-          setType({ type: value.toUpperCase(), isValid: true })
+          setType({ type: value?.toUpperCase(), isValid: true })
         }
         defaultButtonText={"Select Type"}
         dropdownOverlayColor={Colors.backgroundGr}
@@ -192,6 +211,7 @@ function AddForm({
           </View>
         )}
         buttonStyle={{ ...styles.dropdown, ...styles.dropdownBTN }}
+       
         buttonTextStyle={styles.dropdown}
         renderDropdownIcon={() => (
           <MaterialCommunityIcons
@@ -208,21 +228,24 @@ function AddForm({
       )}
 
       <ImageSelector
+        clearImage={clearImage}
         onTakeImage={imageHandler}
-        editImage={isEditing ? trick.image : null}
+        editImage={isEditing ? trick?.image?.url : null}
         basePath={'tricks'}
       />
-      {!image.isValid && (
+      {!image?.isValid && (
         <Text style={styles.errorText}>
           Please select an image. "Name", "type" & "image" are required.
         </Text>
       )}
 
+    
       <Input
         label="Notes"
         textInputConfig={{
+          textAlignVertical: "top",
           autoCapitalize: "sentences",
-          mulitiline: true,
+          multiline: true,
           numberOfLines: 3,
           placeholder: " i.e. point your toes",
           placeholderTextColor: Colors.primaryGreen,
@@ -232,20 +255,7 @@ function AddForm({
           value: notes,
         }}
       />
-      <Input
-        label="Prerequisites"
-        textInputConfig={{
-          autoCapitalize: "sentences",
-          mulitiline: true,
-          numberOfLines: 3,
-          placeholder: "i.e. V-up or inversion",
-          placeholderTextColor: Colors.primaryGreen,
-          onChangeText: (text: string) => {
-            setPreRex(text);
-          },
-          value: preRex,
-        }}
-      />
+     
       <View style={{ width: "60%", alignSelf: "center", margin: 12 }}>
         <PrimaryBtn text="Save" onPress={createNewBookEntry} />
       </View>

@@ -3,15 +3,12 @@ import { useFonts } from "expo-font";
 import { ExpoRoot } from "expo-router";
 import { Provider } from "react-redux";
 import {
-  useQuery,
-  useMutation,
-  useQueryClient,
   QueryClient,
   QueryClientProvider,
 } from 'react-query'
-import { store } from "~/store/store";
-import FirebaseAuthSvc from '../../packages/firebase/FirebaseAuth'
-import { useState } from "react";
+import {store} from '../../packages/store/store'
+
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 
 
@@ -33,10 +30,11 @@ export function App() {
 
   return (
     <Provider store={store}>
+      <GestureHandlerRootView style={{flex: 1}}>
       <QueryClientProvider client={queryClient} >
       <ExpoRoot context={ctx} />
       </QueryClientProvider>
-     
+      </GestureHandlerRootView>
     </Provider>
   );
 }

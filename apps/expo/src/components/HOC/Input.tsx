@@ -6,6 +6,7 @@ import { Icon } from "../Icon";
 export default function Input({
   label,
   textInputConfig,
+  
 }: {
   label?: string;
   textInputConfig: any;
@@ -29,7 +30,9 @@ export default function Input({
   return (
     <View>
       <Text style={labelStyle()}>{label}</Text>
-      <TextInput style={styles.input} {...textInputConfig}>
+      <TextInput style={styles.input} {...textInputConfig}
+      placeholderTextColor={Colors.niceBlue}
+      returnKeyType='done'>
         {textInputConfig.icon && (
           <View className="absolute right-0 z-10">
             <Icon
@@ -53,6 +56,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     color: Colors.primaryLight,
     marginBottom: 10,
+    
     fontSize: 15,
   },
 });

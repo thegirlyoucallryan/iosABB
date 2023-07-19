@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Modal, StyleSheet, View } from "react-native";
-
 import { Colors } from "~/constants/colors";
 import { Icon } from "./Icon";
+import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 
 const WithModal = ({
   children,
@@ -13,23 +13,39 @@ const WithModal = ({
   close: () => void;
   marginTop?: number | string;
 }) => {
+
+  const gesture = useMemo(() => Gesture.Pan().onEnd(() => {
+       close();
+  }), [])
+
+
   return (
     <Modal animationType="slide" transparent={true}>
-      <View style={{ ...styles.container, marginTop: marginTop }}>
-        <View style={styles.background}>
-          {children}
-
-          <Icon
-            color={Colors.primaryLight}
-            size={23}
-            style={styles.close}
-            onPress={close}
-            name={"close"}
-            text={"Close"}
-            textStyle={styles.closeBtn}
-          />
+       <GestureHandlerRootView style={{flex:1}}>
+      <GestureDetector
+        gesture={gesture}
+      >
+         
+        <View style={{ ...styles.container, marginTop: marginTop }}>
+        <View className="flex items-end">
+              <Icon
+                color={Colors.primaryLight}
+                size={23}
+                style={styles.close}
+                onPress={close}
+                name={"close"}
+                // text={"Close"}
+                // textStyle={styles.closeBtn}
+              />
+            </View>
+          <View style={styles.background}>
+         
+            {children}
+           
+          </View>
         </View>
-      </View>
+      </GestureDetector>
+      </GestureHandlerRootView>
     </Modal>
   );
 };
@@ -39,18 +55,15 @@ export default WithModal;
 const styles = StyleSheet.create({
   container: {
     borderRadius: 14,
-    padding: 20,
+    paddingHorizontal: 20,
     justifyContent: "center",
     textAlign: "center",
     flex: 1,
-
-    backgroundColor: "#2e2e2e",
+    backgroundColor: Colors.video,
   },
   close: {
-    backgroundColor: Colors.primaryLight,
-    color: Colors.niceBlue,
+    color: Colors.primaryGreenLight,
     fontFamily: "Prata",
-    alignSelf: "center",
     textAlign: "center",
     padding: 2,
     borderRadius: 5,
@@ -58,7 +71,7 @@ const styles = StyleSheet.create({
   background: {
     height: "80%",
     borderRadius: 10,
-    padding: 10,
+    // padding: 10,
   },
   closeBtn: {
     fontSize: 11,

@@ -1,23 +1,25 @@
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import { Link } from "expo-router";
-import { useDispatch, useSelector } from "react-redux";
-
+import { useDispatch,  } from "react-redux";
 import { Colors } from "~/constants/colors";
-
-import { toggleFavorites } from "../store/tricks-redux";
+import { Trick, toggleFavorites } from "../../../../packages/store/tricks-redux";
 import { Icon } from "./Icon";
-import { Type } from ".prisma/client";
+import { TrickType } from "../../../../packages/store/tricks-redux";
+import { useAppSelector } from "~/app/hooks/hooks";
 
-const BlackList = ({ data }: any) => {
+const BlackList = ( {data}: {data: Trick[]} ) => {
   const dispatch = useDispatch();
 
-  const favorites = useSelector((state) => state.favorites.favorites);
-
+  const favorites = useAppSelector((state) => state.favorites.favorites);
+  
   const toggleFavoritesHandler = (
     title: string,
     id: string,
-    type: Type,
+    type: TrickType,
     isFavorite: boolean,
+    image: {url: string, type: string},
+    tally: number,
+    
   ) => {
     dispatch(
       toggleFavorites({
@@ -25,7 +27,10 @@ const BlackList = ({ data }: any) => {
         id,
         type,
         isFavorite,
-        isComplete: false,
+        completed: false,
+        image,
+        tally,
+       
       }),
     );
   };
@@ -33,11 +38,13 @@ const BlackList = ({ data }: any) => {
   return (
     <View style={styles.container}>
       <FlatList
+        contentContainerStyle={{flexGrow: 1, marginBottom: 10 }}
         scrollEnabled={true}
         data={data}
-        keyExtractor={(data) => data.title}
+        keyExtractor={(data) => data.id}
         extraData={data}
         renderItem={({ item }) => (
+          
           <View style={styles.blackList}>
             <View>
               <Link
@@ -45,11 +52,11 @@ const BlackList = ({ data }: any) => {
                 href={{
                   pathname: "/TrickDetails",
                   params: {
-                    data: item.title,
+                  id: item.id
                   },
                 }}
               >
-                {item?.title}
+                {item?.title.length < 50 ? item?.title : item?.title.substring(0,50) + '...'}
               </Link>
               <Text style={styles.type}>{item.type}</Text>
             </View>
@@ -68,8 +75,12 @@ const BlackList = ({ data }: any) => {
                   item.title,
                   item.id,
                   item.type,
-                  item.isFavorite,
-                );
+                  item.isFavorite ? item.isFavorite : item.isFavorite = false,
+                  item.image,
+                  item.tally,
+                  
+                 
+                  );
               }}
             />
           </View>
@@ -83,22 +94,23 @@ export default BlackList;
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 2,
+    marginBottom: 20,
+    height: '90%'
   },
   blackList: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginHorizontal: 10,
-    padding: 11,
+    marginHorizontal: 5,
+    padding: 7,
     paddingHorizontal: 35,
     borderRadius: 10,
   },
   name: {
     color: Colors.primaryLight,
-    fontSize: 17,
+    fontSize: 14,
     textTransform: "capitalize",
     fontFamily: "Prata",
-    maxWidth: 280,
+    maxWidth: 270,
   },
   type: {
     fontSize: 13,

@@ -1,42 +1,75 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Stack } from "expo-router";
+import {
+  Stack,
+  useRootNavigationState,
+  useRouter,
+  useSegments,
+} from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Provider, useDispatch } from "react-redux";
-import { TRPCProvider } from "~/utils/api";
-import { authenticate } from "~/store/auth";
-import { store } from "../store/store";
+import { Provider, useDispatch, useSelector } from "react-redux";
+
+import { store } from "../../../../packages/store/store";
 import Toast, { BaseToast, ErrorToast } from "react-native-toast-message";
-import { View, Text } from "react-native";
+
 import { Colors } from "~/constants/colors";
+import { API_KEY } from "@env";
+import axios from "axios";
+
+import { browserSessionPersistence, getAuth, setPersistence } from "firebase/auth";
+import { useAppDispatch, useAppSelector } from "./hooks/hooks";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 
 // This is the main layout of the app
 // It wraps your pages with the providers they need
 
 const RootLayout = () => {
-  const dispatch = useDispatch();
-
+  const dispatch = useAppDispatch();
+  const navState = useRootNavigationState();
+  const segments = useSegments();
+  const { isAuthenticated } = useAppSelector((s) => s.isAuthenticated);
+  const router = useRouter();
   useEffect(() => {
     async function fetchTokenFromDevice() {
+
+     
+
       const storedToken = await AsyncStorage.getItem("ABB_token");
 
       const storedUser = await AsyncStorage.getItem("ABB_userId");
-
-      if (!storedToken) {
-        dispatch(
-          authenticate({
-            token: storedToken,
-            userName: "",
-            userId: storedUser,
-          })
-        );
+      
+      // if (storedToken) {
+      
+      //       dispatch(
+      //         authenticate({
+      //           token:storedToken,
+      //           userName: 'user.displayName',
+      //           userId: storedUser,
+      //         })
+      //       );
+      //     }
+        
       }
-    }
+    
     fetchTokenFromDevice();
   }, []);
+  useEffect(() => {
+    if (!navState?.key) return;
+    const inAuthGroup = segments[0] === "(auth)";
+
+    if (
+      // If the user is not signed in and the initial segment is not anything in the auth group.
+      !isAuthenticated &&
+      !inAuthGroup
+    ) {
+      // Redirect to the sign-in page.
+      router.push({ pathname: "Welcome" });
+    }
+  }, [segments, isAuthenticated]);
   const toastConfig = {
-    success: (props) => (
+    success: (props: any) => (
       <BaseToast
         {...props}
         style={{
@@ -63,7 +96,7 @@ const RootLayout = () => {
       />
     ),
 
-    error: (props) => (
+    error: (props: any) => (
       <ErrorToast
         {...props}
         style={{
@@ -91,16 +124,21 @@ const RootLayout = () => {
     ),
   };
 
+  const [queryClient] = useState(() => new QueryClient());
+
   return (
-    <TRPCProvider>
-      <SafeAreaProvider>
+<QueryClientProvider client={queryClient}>
+<SafeAreaProvider>
         <Provider store={store}>
           <Stack screenOptions={{ headerShown: false }} />
           <Toast config={toastConfig} />
           <StatusBar />
         </Provider>
       </SafeAreaProvider>
-    </TRPCProvider>
+
+</QueryClientProvider>
+      
+
   );
 };
 

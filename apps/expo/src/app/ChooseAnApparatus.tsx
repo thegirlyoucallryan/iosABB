@@ -1,36 +1,70 @@
-import { useRouter } from "expo-router";
+import { Link, useNavigation, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import SelectDropdown from "react-native-select-dropdown";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import { useDispatch, useSelector } from "react-redux";
 import { ScreenWrapper } from "~/components/ui/ScreenWrapper";
 import { Colors } from "~/constants/colors";
-import { setCurrentApparatus } from "~/store/user-redux";
-
+import { setCurrentApparatus } from "../../../../packages/store/user-redux";
 import FbFirestoreService from "../../../../packages/firebase/FirebaseCloudService";
-
+import { logout } from "../../../../packages/store/auth";
+import FirebaseAuthSvc from "../../../../packages/firebase/FirebaseAuth";
+import { Apparatus } from "../../../../packages/store/tricks-redux";
 import { useMutation } from "react-query";
 import Toast from "react-native-toast-message";
+import { Icon } from "~/components/Icon";
+import { useAppDispatch, useAppSelector } from "./hooks/hooks";
 
 const ChooseAnApparatus = () => {
-  const router = useRouter();
-  const dispatch = useDispatch();
-  const [apparatus, setApparatus] = useState<string>(null);
+  const nav = useNavigation();
+  const dispatch = useAppDispatch();
+  const [apparatus, setApparatus] = useState<Apparatus>(null);
   const apparatusOptions = ["Silks", "Lyra", "Trapeze", "Hammock"];
-  const userId = useSelector((s) => s.userId.userId);
+  const userId = useAppSelector((s) => s.userId.userId);
+  const userName = useAppSelector((s) => s.isAuthenticated.userName);
+  const [showLink, setShowLink] = useState<boolean>(false);
+
+
+  useEffect(() => {
+    nav.setOptions({
+      headerShown: true,
+      headerStyle: {
+        backgroundColor: Colors.backgroundBlk,
+      },
+      headerTitleStyle: { color: Colors.primaryLight, fontFamily: "Prata" },
+      headerTintColor: Colors.primaryGreen,
+      headerTitle: "Apparatus",
+      headerLeft: () => {
+        return (
+          <Icon
+            name="arrow-left"
+            color={Colors.accentDark}
+            size={22}
+            onPress={() => {
+              dispatch(logout({ token: "", isAuthenticated: false }));
+              FirebaseAuthSvc.logoutUser();
+            }}
+          />
+        );
+      },
+    });
+  },[])
+ 
 
   const apparatusMutation = useMutation({
-    mutationFn: async (apparatus: string) =>
+    mutationFn: async (apparatus: Apparatus) =>
       await FbFirestoreService.updateDocument("users", userId, {
         apparatus: apparatus,
       }),
-    onSuccess: () => router.replace("/(main)/Home"),
-    onError: (err: string) => {
+    onSuccess: () => {
+      setShowLink(true);
+    },
+    onError: () => {
       Toast.show({
         type: "error",
         text1: "Woops!",
-        text2: err,
+        text2:
+          "We are having technical difficulties try logging out and back in again.",
       });
     },
   });
@@ -46,12 +80,15 @@ const ChooseAnApparatus = () => {
     if (apparatus !== null) {
       updateUser();
     }
-  }, [apparatus, dispatch, setCurrentApparatus]);
+  }, [apparatus, dispatch]);
 
   return (
     <ScreenWrapper>
-      <Text className="text-primary text-center align-center text-2xl m-12 mt-44">
-        Which Apparatus are you training?
+      <Text className="text-bone font-sans text-2xl mt-6">
+        Welcome, {userName.charAt(0).toUpperCase() + userName.slice(1)}
+      </Text>
+      <Text className="text-bone font-sans text-center align-center text-3xl m-12 mt-24">
+        What apparatus will you be training today?
       </Text>
       <SelectDropdown
         data={apparatusOptions}
@@ -82,6 +119,19 @@ const ChooseAnApparatus = () => {
           />
         )}
       />
+      {showLink && (
+        <Link
+          className="text-primaryLight  rounded-md text-xl font-sans mt-40 py-2  text-center items-center  "
+          href={{ pathname: "/(main)/Home", params: { apparatus: apparatus } }}
+        >
+          {`Get Started  `}
+          <MaterialCommunityIcons
+            name="arrow-right-circle"
+            size={20}
+            color={Colors.primaryLight}
+          />
+        </Link>
+      )}
       {apparatusMutation.isLoading && (
         <ActivityIndicator
           size={"large"}
@@ -112,12 +162,8 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     height: 50,
     fontSize: 14,
-    // borderColor: "white",
-    // borderWidth: 1,
   },
   dropdownBTN: {
-    // marginTop: 10,
-    // marginBottom: 10,
     borderRadius: 8,
     paddingTop: 18,
     alignItems: "center",

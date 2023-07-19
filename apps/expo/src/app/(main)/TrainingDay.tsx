@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useDispatch, useSelector } from "react-redux";
 import EmptyMessage from "~/components/EmptyMessage";
 import { Icon } from "~/components/Icon";
 import { Colors } from "~/constants/colors";
-import { removeFromFavorites, setComplete } from "~/store/tricks-redux";
-import { AccentBtn } from "../../components/HOC/Button";
+import { Trick, removeFromFavorites, setComplete } from "../../../../../packages/store/tricks-redux";
 import CompleteModal from "../../components/modals/CompleteModal";
 import GeneratorModal from "../../components/modals/GeneratorModal";
 import GoalsModal from "../../components/modals/GoalsModal";
 import { Link, useNavigation } from "expo-router";
+import { useAppSelector, useAppDispatch } from '../hooks/hooks'
+import FbFirestoreService from "../../../../../packages/firebase/FirebaseCloudService";
+
 
 const tallyMarks = require("tally-marks");
 
@@ -18,10 +19,10 @@ const TrainingDay = () => {
   const [showGoalsModal, setShowGoalsModal] = useState(false);
   const [showCompletedModal, setShowCompletedModal] = useState(false);
   const nav = useNavigation();
-  const favorites = useSelector((state) => state.tricks.favorites);
-  const completed = useSelector((state) => state.tricks.completed);
+  const favorites = useAppSelector((state) => state.tricks.favorites);
+  const completed = useAppSelector((state) => state.tricks.completed);
 
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   const generatorHandler = () => {
     setShowGeneratorModal(!showGeneratorModal);
@@ -34,8 +35,8 @@ const TrainingDay = () => {
   };
   const tallyHandler = (id: string) => {
     const indx = completed.findIndex((item) => item.id === id);
-    if (indx > -1) {
-      const amt = completed[indx].tally;
+    if (indx > -1 && completed[indx].tally) {
+      const amt = completed[indx].tally!;
       return amt < 11 ? (
         tallyMarks(amt)
       ) : (
@@ -43,6 +44,13 @@ const TrainingDay = () => {
       );
     }
   };
+
+  const handleComplete = (id: string, item: Trick) => {
+    dispatch(setComplete(item))
+    // try{
+    //   FbFirestoreService.updateDocument()
+    // }
+  }
 
   return (
     <View style={styles.container}>
@@ -57,25 +65,25 @@ const TrainingDay = () => {
             setShowGeneratorModal(!showGeneratorModal);
           }}
         >
-          <Text style={styles.tabItem}>Motivation</Text>
+          <Text style={{...styles.tabItem, color: Colors.primary}}>Motivation</Text>
         </Pressable>
 
-        <Pressable
+        {/* <Pressable
           style={{ ...styles.tab, backgroundColor: Colors.backgroundGr }}
           onPress={() => {
             setShowCompletedModal(!showCompletedModal);
           }}
         >
           <Text style={styles.tabItem}>Completed</Text>
-        </Pressable>
+        </Pressable> */}
 
         <Pressable
-          style={{ ...styles.tab, backgroundColor: Colors.niceBlue }}
+          style={ styles.tab }
           onPress={() => {
             setShowGoalsModal(!showGoalsModal);
           }}
         >
-          <Text style={styles.tabItem}>Goals</Text>
+          <Text style={{...styles.tabItem, color: Colors.primaryGreenLight}}>Goals</Text>
         </Pressable>
       </View>
       <Text style={styles.heading}>Things to Train</Text>
@@ -102,7 +110,7 @@ const TrainingDay = () => {
                       },
                     }}
                   >
-                    {item?.title}
+                    {item?.title.length < 30 ? item?.title : item?.title.substring(0,30) + '...'}
                   </Link>
 
                   <Text numberOfLines={1} style={styles.tally}>
@@ -115,11 +123,12 @@ const TrainingDay = () => {
                     color={Colors.primaryLight}
                     name={"check-underline-circle-outline"}
                     size={25}
-                    onPress={() => dispatch(setComplete(item))}
+                    onPress={() => handleComplete(item.id, item)}
                     text={"Complete"}
                     textStyle={{ fontSize: 9 }}
                   />
                   <Icon
+                   
                     color={Colors.accentLight}
                     name={"star-shooting"}
                     size={25}
@@ -145,7 +154,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.backgroundBlk,
     flex: 1,
-    // justifyContent: "space-between",
+ 
   },
 
   quote: {
@@ -164,20 +173,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   itemBox: {
-    // justifyContent: "space-between",
     flexDirection: "row",
-    width: "60%",
+    width: "70%",
     alignItems: "center",
   },
   item: {
     color: Colors.primary,
-    fontSize: 17,
+    fontSize: 15,
     fontFamily: "Prata",
     textAlign: "left",
-    marginLeft: 10,
+    // marginLeft: 10,
     margin: 3,
     textTransform: "capitalize",
-    width: "50%",
+    // maxWidth: "70%",
   },
   tally: {
     color: Colors.primary,
@@ -185,10 +193,11 @@ const styles = StyleSheet.create({
     width: "20%",
   },
   todoContainer: {
-    height: "35%",
-    // margin: 15,
+    height: "85%",
+    margin: 15,
     borderRadius: 4,
-    // padding: 10,
+    padding: 10,
+    
   },
 
   mapContainer: {
@@ -199,21 +208,23 @@ const styles = StyleSheet.create({
   },
   iconBox: {
     flexDirection: "row",
-    marginHorizontal: 10,
+    width: '30%',
     justifyContent: "space-between",
     alignItems: "center",
-    width: "30%",
+ 
   },
   tabContainer: {
     flexDirection: "row",
+ 
+
   },
   tab: {
     padding: 15,
-    backgroundColor: Colors.primaryGreen,
+    flex: 1,
+    backgroundColor: Colors.backgroundGr,
     borderBottomLeftRadius: 18,
     borderBottomRightRadius: 5,
-    width: "34%",
-    alignSelf: "flex-end",
+    
   },
   tabItem: {
     color: Colors.bone,
@@ -239,10 +250,10 @@ const styles = StyleSheet.create({
     color: Colors.niceBlue,
     textDecorationLine: "line-through",
     textDecorationStyle: "solid",
-    fontSize: 17,
+    fontSize: 15,
     fontFamily: "Prata",
     textAlign: "center",
-    marginLeft: 10,
+    // marginLeft: 10,
     margin: 3,
     textTransform: "capitalize",
     maxWidth: "70%",

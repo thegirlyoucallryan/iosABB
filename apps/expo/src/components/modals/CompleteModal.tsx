@@ -1,24 +1,24 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleProp, StyleSheet, Text, TextStyle, View } from "react-native";
 import proptypes from "prop-types";
 import { useSelector } from "react-redux";
 
 import { Colors } from "~/constants/colors";
 import EmptyMessage from "../../components/EmptyMessage";
 import WithModal from "../../components/withModal";
+import { useAppSelector } from "~/app/hooks/hooks";
+import { Trick } from "../../../../../packages/store/tricks-redux";
 
 const tallyMarks = require("tally-marks");
 
-// CompleteModal.propTypes= {
-//   close: () => void
-// }
 
-const CompleteModal = (props) => {
-  const completed = useSelector((state) => state.tricks.completed);
+
+const CompleteModal = ({close, headline}: {close: () => void, headline?: StyleProp<TextStyle>}) => {
+  const completed = useAppSelector((state) => state.tricks.completed);
 
   return (
     <View style={styles.listContainer}>
-      <WithModal close={props.close}>
+      <WithModal close={close}>
         <View>
           <Text style={styles.headline}>My Stats</Text>
           {completed && completed?.length === 0 ? (
@@ -30,7 +30,7 @@ const CompleteModal = (props) => {
             />
           ) : (
             <ScrollView style={{ height: "80%" }}>
-              {completed.map((item) => (
+              {completed.map((item: Trick) => (
                 <View key={item.id} style={styles.listContainer}>
                   <View style={styles.nameColumn}>
                     <Text numberOfLines={1} style={styles.item}>

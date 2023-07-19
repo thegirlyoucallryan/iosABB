@@ -7,20 +7,22 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useNavigation } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 
 import { Colors } from "~/constants/colors";
-import logo from "../../../assets/logo.png";
 
-import { AccentBtn } from "../../components/HOC/Button";
+import logo from '../../assets/logo.png'
+
+import { AccentBtn } from "../components/HOC/Button";
 
 let width = Dimensions.get("window").width;
 
 export default function Welcome() {
+  const router = useRouter()
   const nav = useNavigation();
   return (
     <View style={styles.container}>
-      <View style={{height: 380}}>
+      <View style={{height: 390}}>
     <View style={{height: 350}}>
     <Image source={logo} style={styles.image} />
     </View>
@@ -28,13 +30,13 @@ export default function Welcome() {
       
       <Text style={styles.welcome}>Welcome</Text>
       <Text style={styles.headline}>
-        Aerial Black Book, An app built for Aerialists.
+        Aerial Admin, An app built for Aerialists.
       </Text>
 
       <View style={styles.buttonBox}>
         <AccentBtn
           onPress={() => {
-            nav.navigate("Login");
+            router.push("/(auth)/Login");
           }}
           text={"Login   ->"}
         />
@@ -42,7 +44,7 @@ export default function Welcome() {
           <Text style={styles.headline}>Don't have an account? </Text>
           <TouchableOpacity
             onPress={() => {
-              nav.navigate("SignUp");
+              router.push("/(auth)/SignUp");
             }}
           >
             <Text style={styles.signup}>Sign Up</Text>
@@ -88,7 +90,7 @@ const styles = StyleSheet.create({
     alignContent: "center",
   },
   image: {
-    width: '75%',
+    width: '100%',
     height: '100%',
     alignSelf: "center",
   },

@@ -1,17 +1,17 @@
 import {fbApp} from './FirebaseConfig';
-import {GoogleAuthProvider, getAuth, updateProfile} from 'firebase/auth'
+import {GoogleAuthProvider, browserLocalPersistence, getAuth, setPersistence, updateProfile} from 'firebase/auth'
 
 
-const auth = fbApp.auth();
+export const auth = fbApp.auth();
 const update = getAuth()
 
+// setPersistence(auth, browserLocalPersistence);
 
-
-const registerUser = (email, password) => {
+const registerUser = (email: string, password: string) => {
     return auth.createUserWithEmailAndPassword(email, password)
 }
 
-const loginUser = (email, password) => {
+const loginUser = (email: string, password: string) => {
     return auth.signInWithEmailAndPassword(email, password);
 }
 
@@ -19,11 +19,11 @@ const logoutUser = () => {
     return auth.signOut()
 }
 
-const logUserInWithToken = (token: string) => {
+const logUserInWithToken = (token:any) => {
   return auth.signInWithCustomToken(token)
 }
 
-const sendPasswordResetEmail = (email) => {
+const sendPasswordResetEmail = (email: string) => {
     return auth.sendPasswordResetEmail(email)
 }
 
@@ -33,9 +33,13 @@ const loginWithGoogle = () => {
 }
 
 
-const subscribeToAuthChanges = (handleAuthChange) => {
+const subscribeToAuthChanges = (handleAuthChange: (user: any) => void) => {
     auth.onAuthStateChanged((user) => {
+       if(user) {
         handleAuthChange(user)
+       } else{
+
+       }
     })
 }
 
@@ -48,7 +52,7 @@ const updateUser = (userName: string) => {
 
 
 const getUsersProfile = () => {
-    return update.currentUser.displayName
+    return update.currentUser?.displayName
 }
 
 

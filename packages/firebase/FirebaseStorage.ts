@@ -1,21 +1,38 @@
-import { fbApp,storage } from "./FirebaseConfig";
-import { getStorage, ref, getDownloadURL, uploadBytes, uploadBytesResumable } from "firebase/storage";
+
+import { storage } from "./FirebaseConfig";
 
 
-const uploadFile = (file, filePath, progressCallback) => {
-  if(!file) return
-  const storageRef = getStorage()
-  const metadata = {
-    contentType: 'image/png',
-  };
-  const imageRef = ref(storageRef, filePath)
-    const uploadTask = uploadBytesResumable(imageRef, file, metadata).then((snapshot) => {
-     const url = getDownloadURL(snapshot.ref) 
 
+const uploadFile = (file: Blob, filePath: string) => {
+ if(!file){
+  return
+ }
+
+ const storageRef = storage.ref()
+ const imageRef = storageRef.child(filePath)
+  const uploadTask =  imageRef.put(file).then((snapshot) => {
+    const url = snapshot.ref.getDownloadURL()
      return url
     })
 
     return uploadTask
+
+   
+  }
+
+
+//modular
+    // if(!file) return
+    // const storageRef = getStorage()
+  
+    // const imageRef = ref(storageRef, filePath)
+    //   const uploadTask = uploadBytesResumable(imageRef, file).then((snapshot) => {
+    //    const url = getDownloadURL(snapshot.ref) 
+  
+    //    return url
+    //   })
+
+
 
     // uploadTask.on(
     //     'state_changed',
@@ -33,8 +50,6 @@ const uploadFile = (file, filePath, progressCallback) => {
     // )
 
   
-   
-}
 
 
  const FirebaseStorage = {

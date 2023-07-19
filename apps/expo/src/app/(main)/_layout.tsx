@@ -1,30 +1,55 @@
-import  { useEffect } from "react";
-import { Image, View, Text } from "react-native";
+import { useCallback, useEffect } from "react";
+import { Image, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import {
   Tabs,
+  useFocusEffect,
+  useNavigation,
   useRootNavigationState,
   useRouter,
   useSegments,
 } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Provider, useDispatch, useSelector } from "react-redux";
-
-import { TRPCProvider } from "~/utils/api";
+import { Provider } from "react-redux";
 import { Icon } from "~/components/Icon";
 import { Colors } from "~/constants/colors";
-import { logout } from "~/store/auth";
-import { store } from "../../store/store";
+import { logout } from "../../../../../packages/store/auth";
+import { store } from "../../../../../packages/store/store";
 import FirebaseAuthSvc from "../../../../../packages/firebase/FirebaseAuth";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks";
+import { Trick } from "../../../../../packages/store/tricks-redux";
+
+type RootStackParamList = {
+  SignUp: undefined,
+  Login: undefined,
+  CreatePost: undefined;
+  Home: undefined,
+  Welcome: undefined,
+  AddTrick: {id: string, isEditing: boolean}
+  Blackbook: undefined,
+  Details: {data: Trick},
+  TrickDetails: {id: string}
+  };
+
+
+declare global {
+  namespace ReactNavigation {
+    interface RootParamList extends RootStackParamList {}
+  }
+}
 
 const RootLayout = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navState = useRootNavigationState();
   const segments = useSegments();
-  const { isAuthenticated } = useSelector((s) => s.isAuthenticated);
-  const apparatus = useSelector((s) => s.user.apparatus)
+  const { isAuthenticated } = useAppSelector((s) => s.isAuthenticated);
+  const apparatus = useAppSelector((s) => s.user.apparatus?.toString());
   const router = useRouter();
+  const nav = useNavigation()
+
+
+  
 
   useEffect(() => {
     if (!navState?.key) return;
@@ -36,14 +61,14 @@ const RootLayout = () => {
       !inAuthGroup
     ) {
       // Redirect to the sign-in page.
-      router.replace("Welcome");
+      router.push({ pathname: "/(auth)/Welcome" });
     } else if (isAuthenticated && inAuthGroup) {
       // Redirect away from the sign-in page.
-      router.replace("/(apparatus)/ChooseAnApparatus");
+      router.push("/(apparatus)/ChooseAnApparatus");
     }
   }, [segments, isAuthenticated]);
   return (
-    <TRPCProvider>
+  
       <SafeAreaProvider>
         <Provider store={store}>
           <Tabs
@@ -56,6 +81,7 @@ const RootLayout = () => {
               headerStyle: {
                 backgroundColor: Colors.backgroundBlk,
               },
+              headerTitle: apparatus,
               headerTintColor: Colors.bone,
               headerTitleStyle: {
                 fontFamily: "Prata",
@@ -78,7 +104,6 @@ const RootLayout = () => {
               headerRight: () => {
                 return (
                   <View className="flex flex-row px-4 items-center">
-                    {apparatus && <Text className="text-primaryLight mx-8 text-xl" style={{fontFamily: 'Prata'}}>{apparatus}</Text>}
                     <Icon
                       name="location-exit"
                       size={23}
@@ -86,16 +111,12 @@ const RootLayout = () => {
                       text={"LogOut"}
                       textStyle={{ fontSize: 9 }}
                       onPress={() => {
-                        dispatch(logout(""));
-                        FirebaseAuthSvc.logoutUser()
+                        dispatch(logout({token: '', isAuthenticated: false}));
+                        FirebaseAuthSvc.logoutUser();
                       }}
                     />
-                    
-                    {/* <MaterialCommunityIcons
-                      name="dots-vertical"
-                      size={23}
-                      color={Colors.primary}
-                    /> */}
+
+                
                   </View>
                 );
               },
@@ -131,7 +152,7 @@ const RootLayout = () => {
               key={"Home"}
               name={"Home"}
               options={{
-                headerTitle: "Home",
+                headerTitle: apparatus,
                 tabBarLabel: "Home",
                 tabBarIcon: ({ focused }) => (
                   <MaterialCommunityIcons
@@ -142,11 +163,44 @@ const RootLayout = () => {
                 ),
               }}
             />
+            <Tabs.Screen
+              key={"Add"}
+              name={"AddTrick"}
+              // listeners={({ navigation}) => ({
+              //   tabPress: (e) => {
+              //     // Prevent default action
+              //     // e.preventDefault();
+            
+              //     // Do something with the `navigation` object
+              //     navigation.setOptions({screen: "AddTrick", isEditing: false, id: undefined})
+              //   },
+              // })}
+              options={{
+                
+                unmountOnBlur: true,
+                tabBarLabel: "Add",
+              
+              }}
+            />
+             <Tabs.Screen
+              key={"TrainingDay"}
+              name={"TrainingDay"}
+              options={{
+                tabBarLabel: "Train",
+              }}
+            />
+              <Tabs.Screen
+              key={"Blackbook"}
+              name={"Blackbook"}
+              options={{
+                tabBarLabel: "Tricks",
+              }}
+            />
           </Tabs>
           <StatusBar />
         </Provider>
       </SafeAreaProvider>
-    </TRPCProvider>
+
   );
 };
 

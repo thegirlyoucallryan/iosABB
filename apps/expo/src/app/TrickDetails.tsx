@@ -1,20 +1,24 @@
 import { useState } from "react";
-import { ImageBackground, StyleSheet, Text, View } from "react-native";
+import { ImageBackground, ImageSourcePropType, Linking, StyleSheet, Text, View } from "react-native";
 import { useSearchParams } from "expo-router";
-import { useSelector } from "react-redux";
-
 import { Colors } from "~/constants/colors";
 import { Icon } from "../components/Icon";
 import { DetailModal } from "../components/modals/DetailModal";
+import { useAppSelector } from "./hooks/hooks";
+import { Trick } from "../../../../packages/store/tricks-redux";
+import { Video, ResizeMode, AVPlaybackStatusSuccess } from "expo-av";
+import { useRef } from "react";
+import { useGetFetchQuery } from "./hooks/useQueryClient";
 
 const TrickDetails = () => {
-  const [openInfoModal, setOpenInfoModal] = useState(false);
-  const tricks = useSelector((state) => state.tricks.tricks);
-  const favorites = useSelector((state) => state.favorites.favorites);
-  const { data: title } = useSearchParams();
+  const [openInfoModal, setOpenInfoModal] = useState(true);
+  const favorites = useAppSelector((state) => state.favorites.favorites);
+  const {id} = useSearchParams()
+  const data = useGetFetchQuery('tricks') as Trick[]
+  const trick = data.find(d => d.id === id)
+  const video = useRef(null);
+  const [status, setStatus] = useState<AVPlaybackStatusSuccess | {}>({});
 
-  let selectedTrick = tricks.find((item) => item.title === title);
-  console.log(selectedTrick, 'selected')
   const closeModalHandler = () => {
     setOpenInfoModal(false);
   };
@@ -23,7 +27,7 @@ const TrickDetails = () => {
     <View style={styles.container}>
       <View style={styles.heading}>
         <Text numberOfLines={2} style={styles.name}>
-          {selectedTrick?.title}
+          {trick?.title}
         </Text>
         <Icon
           style={styles.editImageDots}
@@ -35,12 +39,27 @@ const TrickDetails = () => {
           }}
         />
       </View>
-     <View className="w-full h-72">
-     <ImageBackground
-        source={{ uri: selectedTrick?.image }}
-        style={{ height: '100%', width: "100%", marginHorizontal: 3 }}
-      />
-     </View>
+      <View className="w-full h-72">
+        {trick?.image.type === 'image' && (
+          <ImageBackground
+            source={{ uri: trick?.image.url}}
+            style={{ height: "100%", width: "100%", marginHorizontal: 3 }}
+          />
+        )}
+         {trick?.image.type === 'video' && (
+          <Video
+          ref={video}
+          style={{ width: "100%", height: "100%",  }}
+          source={{
+            uri: trick.image.url
+          }}
+          useNativeControls
+          resizeMode={ResizeMode.CONTAIN}
+          isLooping
+          onPlaybackStatusUpdate={(status) => setStatus(() => status)}
+        />
+        )}
+      </View>
 
       <View style={styles.infoContainer}>
         <Icon
@@ -54,10 +73,10 @@ const TrickDetails = () => {
             setOpenInfoModal(true);
           }}
         />
-        {openInfoModal && (
+        {openInfoModal && trick && (
           <DetailModal
             close={closeModalHandler}
-            trick={selectedTrick}
+            trick={trick}
             favorites={favorites}
           />
         )}

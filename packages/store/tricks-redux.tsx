@@ -1,8 +1,29 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { AppDispatch, RootState } from "./store";
+import { ThunkAction } from "@reduxjs/toolkit";
 
 
-export type Apparatus = ["Silks", "Lyra", "Hammock", "Pole"]
+export type Apparatus = ["Silks", "Lyra", "Hammock", "Pole", ] | null;
+export type TrickType = "Drop"
+| "Climb"
+| "Conditioning"
+| "Split"
+| "Roll"
+| "Belay"
+| "Other";
 
+export type Trick = {
+  id: string;
+  title: string;
+  type: TrickType,
+  image: { url: string; type: string };
+
+  notes?: string;
+  completed: boolean;
+  tally: number;
+  completedDate?: string[];
+  isFavorite?: boolean,
+};
 const blackBookSlice = createSlice({
   name: "blackbook",
   initialState: {
@@ -12,53 +33,55 @@ const blackBookSlice = createSlice({
   },
   reducers: {
     //state here is changing to prevTricks
-    createNewTrick: (state, action) => {
+    createNewTrick: (state, action: PayloadAction<Trick>) => {
+      console.log(action, 'action from create New trick to solve number issue')
       const newItem = action.payload;
       const prevTricks = [...state.tricks];
-      state = prevTricks.push(newItem);
+      state.tricks = prevTricks.concat(newItem);
     },
-    editTrick: (state, action) => {
+    editTrick: (state, action: PayloadAction<Trick>) => {
       const { id } = action.payload;
       const { tricks } = state;
       const index = state.tricks.findIndex((trick: Trick) => trick.id === id);
       tricks[index] = { ...action.payload };
     },
-    deleteTrick: (state, action) => {
+    deleteTrick: (state, action: PayloadAction<{ id: string }>) => {
       const id = action.payload.id;
       state.tricks.splice(
-        state.tricks.findIndex((trick) => trick.id === id),
-        1,
+        state.tricks.findIndex((trick: Trick) => trick.id === id),
+        1
       );
-      let index = state.favorites.findIndex((trick) => trick.id === id);
+      let index = state.favorites.findIndex((trick: Trick) => trick.id === id);
       if (index > -1) {
         state.favorites.splice(index, 1);
       }
     },
     setTricksFromBackend: (state, action) => {
+      
       state.tricks = [...action.payload];
-      //state.tricks.push(...action.payload);
+      state.tricks.push(...action.payload);
     },
-    toggleFavorites: (state, action) => {
+    toggleFavorites: (state, action:  PayloadAction<Trick>) => {
       const { favorites } = state;
       const { id } = action.payload;
-      const index = favorites.findIndex((trick) => trick.id === id);
+      const index = favorites.findIndex((trick: Trick) => trick.id === id);
 
       if (index < 0) {
         action.payload.isFavorite === !action.payload.isFavorite;
-
-        favorites.push(action.payload);
+        const newFav = action.payload
+        favorites.push(newFav);
       } else if (index >= 0) {
         favorites.splice(index, 1);
       }
     },
-    removeFromFavorites: (state, action) => {
+    removeFromFavorites: (state, action: PayloadAction<string>) => {
       const { favorites } = state;
       let index = favorites.findIndex(function (obj) {
         return obj.id == action.payload;
       });
       if (index > -1) favorites.splice(index, 1);
     },
-    setComplete: (state, action) => {
+    setComplete: (state, action: PayloadAction<Trick>) => {
       const { favorites } = state;
       const itemId = action.payload.id;
       let index = favorites.find((trick) => trick.id === itemId);
@@ -70,21 +93,37 @@ const blackBookSlice = createSlice({
         if (completeIndex > -1) {
           completed[completeIndex].tally =
             completed[completeIndex].tally + 1 || 2;
+
+            index.completedDate?.push(new Date().toISOString())
+         
+            console.log(index.completedDate, 'in existing')
         }
         if (completeIndex == -1) {
           //not calling () todatestring was returning "completeDate": [Function toISOString],
-          index.completeDate = new Date().toLocaleDateString();
+         
+          let completedDate = []
+          completedDate?.push(new Date().toISOString())
+          index.completedDate = completedDate;
           completed.push(index);
+          console.log(index, 'after completeddated addition')
         }
+          //not calling () todatestring was returning "completeDate": [Function toISOString],
+          
+        
+          
+        
       }
     },
   },
 });
 
-
-
-export const sendTrickData = (trick, token: string, uId: string, apparatus: Apparatus) => {
-  return async (dispatch) => {
+export const sendTrickData = (
+  trick: Trick,
+  token: string,
+  uId: string,
+  apparatus: Apparatus
+)=> {
+  return async (dispatch: any) => {
     const sendPutRequest = async () => {
       const response = await fetch(
         `https://aerial-blackbook-default-rtdb.firebaseio.com/users/${apparatus}/${uId}/tricks.json?auth=${token}`,
@@ -93,7 +132,7 @@ export const sendTrickData = (trick, token: string, uId: string, apparatus: Appa
           body: JSON.stringify({
             trick,
           }),
-        },
+        }
       ).then(dispatch(createNewTrick({ ...trick })));
       if (!response.ok) {
         throw new Error("failed to send");
@@ -109,10 +148,15 @@ export const sendTrickData = (trick, token: string, uId: string, apparatus: Appa
 
 //id set to generic then back into state from backend
 
-export const editTrickData = (trick: Trick, token: string, uId: string, apparatus: Apparatus) => {
+export const editTrickData = (
+  trick: Trick,
+  token: string,
+  uId: string,
+  apparatus: Apparatus
+) => {
   const { id } = trick;
 
-  return async (dispatch) => {
+  return async (dispatch: any) => {
     dispatch(editTrick({ ...trick }));
     const sendPutRequest = async () => {
       const response = await fetch(
@@ -125,7 +169,7 @@ export const editTrickData = (trick: Trick, token: string, uId: string, apparatu
           body: JSON.stringify({
             trick: trick,
           }),
-        },
+        }
       );
       const response2 = await response.json();
       console.log(response2);
@@ -141,15 +185,20 @@ export const editTrickData = (trick: Trick, token: string, uId: string, apparatu
   };
 };
 
-export const deleteFromAll = (id: string, token: string, uId: string, apparatus: Apparatus) => {
-  return async (dispatch) => {
+export const deleteFromAll = (
+  id: string,
+  token: string,
+  uId: string,
+  apparatus: Apparatus
+) => {
+  return async (dispatch: any) => {
     dispatch(deleteTrick({ id }));
     const sendDeleteRequest = async () => {
       const response = await fetch(
         `https://aerial-blackbook-default-rtdb.firebaseio.com/users/${apparatus}/${uId}/tricks/${id}.json?auth=${token}`,
         {
           method: "DELETE",
-        },
+        }
       );
 
       if (!response.ok) {

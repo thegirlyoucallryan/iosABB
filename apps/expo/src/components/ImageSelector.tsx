@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Alert, Button, Image, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Button, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import {
   MediaTypeOptions,
   PermissionStatus,
@@ -7,27 +7,39 @@ import {
   launchImageLibraryAsync,
   useCameraPermissions,
   useMediaLibraryPermissions,
+
 } from "expo-image-picker";
 import "react-native-get-random-values";
-import { v4 } from "uuid";
-import { AccentBtn, PrimaryBtn } from "~/components/HOC/Button";
+import uuid from "react-native-uuid";
 import { Colors } from "~/constants/colors";
 import FirebaseStorageService from "../../../../packages/firebase/FirebaseStorage";
+import { ImageType } from "./AddForm";
+import { AVPlaybackStatusSuccess, ResizeMode, Video } from "expo-av";
+import { ScrollView } from "react-native-gesture-handler";
+import { Icon } from "./Icon";
 
 function ImageSelector({
   onTakeImage,
   editImage,
   basePath,
+  clearImage,
 }: {
-  onTakeImage: (imageUri: string) => void;
+  onTakeImage: (image: ImageType) => void;
+  clearImage:boolean;
   editImage?: string | null;
   basePath: string;
 }) {
   const [image, setImage] = useState(editImage ? editImage : null);
-  const [galleryImage, setGalleryImage] = useState("");
+
+  const [galleryImage, setGalleryImage] = useState<{
+    url: string;
+    type: string;
+  } | null>(null);
   const [cameraPermissionInfo, requestPermission] = useCameraPermissions();
   const [mediaStatus, requestPermissionMedia] = useMediaLibraryPermissions();
   const [uploadStatus, setUploadStatus] = useState<number>(-1);
+  const video = useRef(null);
+  const [status, setStatus] = useState<AVPlaybackStatusSuccess | {}>({});
 
   async function verifyPermissions() {
     if (cameraPermissionInfo?.status === PermissionStatus.UNDETERMINED) {
@@ -44,6 +56,12 @@ function ImageSelector({
 
     return true;
   }
+
+  useEffect(() => {
+    if(clearImage){
+      setImage(null)
+    }
+  }, [clearImage])
 
   async function verifyGalleryPermissions() {
     if (mediaStatus?.status === PermissionStatus.UNDETERMINED) {
@@ -72,8 +90,11 @@ function ImageSelector({
       aspect: [16, 9],
       quality: 0.6,
     });
-    setImage(image.assets[0].uri);
-    onTakeImage(image.assets[0].uri);
+    setImage(image.assets && image.assets[0].uri);
+    
+    if (image.assets) {
+      onTakeImage({ url: image.assets[0].uri, type: image.assets[0].type! });
+    }
   }
 
   async function imageSelectorHandler() {
@@ -81,22 +102,49 @@ function ImageSelector({
     if (!hasPermissionforGallery) {
       return;
     }
-    const generatedFileId = v4();
+    const generatedFileId = uuid.v4();
     const galleryImage = await launchImageLibraryAsync({
       mediaTypes: MediaTypeOptions.All,
       allowsEditing: true,
       aspect: [16, 9],
       quality: 0.6,
+      videoMaxDuration: 120
+   
     });
+    
+    async function getDownloadURL() {
 
-    const downloadUrl = await FirebaseStorageService.uploadFile(
-      galleryImage.assets[0].uri,
-      `${basePath}/${generatedFileId}`,
-      setUploadStatus
-    );
-    console.log(downloadUrl.toString(), "finsh");
-    setGalleryImage(downloadUrl.toString());
-    onTakeImage(downloadUrl.toString());
+      if (galleryImage.canceled || !galleryImage.assets || galleryImage.assets.length === 0) {
+        // User cancelled the image selection or no assets were returned
+        return;
+      }
+     
+      if (galleryImage.assets) {
+        console.log(galleryImage.assets, 'file')
+    
+        const {uri} = galleryImage.assets[0]
+        const response = await fetch(uri);
+        const blob = await response.blob();
+
+        const downloadUrl = await FirebaseStorageService.uploadFile(
+          blob,
+          `${basePath}/${generatedFileId}`
+        );
+        return downloadUrl;
+      }
+    }
+    getDownloadURL().then((response) => {
+          if (response && galleryImage.assets) {
+        setGalleryImage({
+          url: response as string,
+          type: galleryImage.assets[0].type!,
+        });
+        onTakeImage({
+          url: response as string,
+          type: galleryImage.assets[0].type!,
+        });
+      }
+    });
   }
 
   let imagePreview = (
@@ -121,21 +169,42 @@ function ImageSelector({
   }
 
   if (galleryImage) {
-    imagePreview = (
-      <View style={styles.imagePrev}>
-        <Image style={styles.image} source={{ uri: galleryImage }} />
-      </View>
-    );
+    if (galleryImage.type === "image") {
+      
+      imagePreview = (
+        <View style={styles.imagePrev}>
+          <Image style={styles.image} source={{ uri: galleryImage.url }} />
+        </View>
+      );
+    } else if (galleryImage.type === "video") {
+      imagePreview = (
+        <View className="h-80 w-full mb-2 ">
+          <Video
+            ref={video}
+            style={{ width: "100%", height: "100%",  }}
+            source={{
+              uri: galleryImage.url,
+            }}
+            useNativeControls
+            resizeMode={ResizeMode.COVER}
+            isLooping
+            onPlaybackStatusUpdate={(status) => setStatus(() => status)}
+          />
+        </View>
+      );
+    }
   }
 
   return (
-    <View>
-      <View>{imagePreview}</View>
+<ScrollView >
+      <View className="flex">{imagePreview}</View>
       <View style={styles.buttonContainer}>
-        <PrimaryBtn text="Camera" onPress={imageTakerHandler} />
-        <AccentBtn text="Gallery" onPress={imageSelectorHandler} />
+        <Icon color={Colors.bone} name={"camera-enhance-outline"} onPress={imageTakerHandler} size={30} text="Camera"/>
+        {/* <PrimaryBtn text="Camera" onPress={imageTakerHandler} /> */}
+        <Icon color={Colors.primaryLight} name={"view-gallery-outline"} onPress={imageSelectorHandler} size={30} text="Gallery"/>
+        {/* <AccentBtn text="Gallery" onPress={imageSelectorHandler} /> */}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -144,17 +213,22 @@ export default ImageSelector;
 const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: "row",
-    width: "80%",
+    width: "90%",
     alignSelf: "center",
     marginBottom: 8,
     justifyContent: "space-evenly",
   },
   imagePrev: {
-    width: "80%",
+    width: '100%',
     height: 200,
     justifyContent: "center",
     alignSelf: "center",
-    padding: 7,
+    marginBottom: 8,
+    border: Colors.niceBlue,
+    borderWidth: 1,
+    elevation: 10
+  
+   
   },
   image: {
     height: "100%",

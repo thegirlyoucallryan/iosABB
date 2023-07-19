@@ -1,13 +1,17 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { Apparatus } from "./tricks-redux";
 
+interface UserType {
+    apparatus: Apparatus,
+}
 
 const userSlice = createSlice({
     name: "userInfo",
     initialState: {
-        apparatus: ''
+        apparatus: null as Apparatus
     }, 
     reducers: {
-        setCurrentApparatus: (state, action) => {
+        setCurrentApparatus: (state, action: PayloadAction<Apparatus>) => {
             console.log(action)
             state.apparatus = action.payload
         }

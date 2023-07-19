@@ -10,7 +10,7 @@
     "@turbo/gen": "^1.9.7",
     "eslint": "^7.32.0",
     "eslint-config-custom": "*",
-    "prettier": "^2.5.1",
+    "prettier": "^2.8.8",
     "turbo": "^1.9.7"
   },
   "name": "aerialBBMono",
@@ -20,6 +20,7 @@
     "packages/*"
   ],
   "dependencies": {
-    "firebase": "^9.22.0"
+    "firebase": "^9.23.0",
+    "react-native-fs": "^2.20.0"
   }
 }

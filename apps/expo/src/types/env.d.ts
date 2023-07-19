@@ -4,3 +4,4 @@ declare module '@env'{
     export const API_URL : "https://aerial-blackbook-default-rtdb.firebaseio.com";
 
 }
+

@@ -1,44 +1,51 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useNavigation } from "expo-router";
+import { Link, useNavigation } from "expo-router";
 import { useDispatch } from "react-redux";
 import Toast from "react-native-toast-message";
 import { Colors } from "~/constants/colors";
-import { authenticate } from "~/store/auth";
 import Input from "../../components/HOC/Input";
 import Load from "../../components/HOC/Load";
-import { logUserIn } from "../../utils/userLogin";
+import { authenticate } from "../../../../../packages/store/auth";
 import FirebaseAuthSvc from "../../../../../packages/firebase/FirebaseAuth";
+import {  useAppDispatch } from '../hooks/hooks'
+import { fbApp } from "../../../../../packages/firebase/FirebaseConfig";
+import { browserLocalPersistence, getAuth, setPersistence } from "firebase/auth";
+
+
+
+
 
 const Login = () => {
   const [Loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("Ryanh@hstks.com");
+  const [email, setEmail] = useState("Ryanh@hstk.com");
   const [password, setPassword] = useState("password");
   const [errorMsg, setErrorMsg] = useState("");
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const nav = useNavigation();
-  let userInfo = {};
+  const auth = getAuth()
 
   async function logInHandler(email: string, password: string) {
     setLoading(true);
     try {
+      
       await FirebaseAuthSvc.loginUser(email, password).then((cred) => {
-        userInfo = {
-          token: cred.user.refreshToken,
-          userId: cred.user.uid,
-          userName: cred.user.displayName,
+       const  userInfo = {
+          token: cred.user!.refreshToken,
+          userId: cred.user!.uid,
+          userName: cred.user!.displayName as string
         };
 
         dispatch(authenticate(userInfo));
-      });
-    } catch (error) {
-      console.log(error.message);
-
+      })
+    } catch (error : any) {
+    if(error)  {
+ 
       Toast.show({
         type: "error",
         text1: "Error",
         text2: error.message,
-      });
+      });}
       setLoading(false);
     }
   }
@@ -75,7 +82,9 @@ const Login = () => {
             value: password,
           }}
         />
-
+ 
+          <Link href={'ResetPassword'} className="text-sm text-primary text-right">Forgot password?</Link>
+ 
         <Pressable onPress={() => logInHandler(email, password)}>
           <Text style={styles.btn}>LOGIN</Text>
         </Pressable>

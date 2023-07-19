@@ -16,12 +16,12 @@ export const Colors = {
   bone: "#EAE8E1",
   accentDark: "#BF5841",
   accentLight: "#cdcdcd",
-  niceBlue: "#BF5841",
+  niceBlue: "#424F5C",
   backgroundGr: "#5555",
   primaryGreen: "#70A198",
   primaryGreenLight: "#89B39E",
-
-  // #4F716B old green
+  video: "#2e2e2e",
+  translucentGreen: 'rgba(79, 113, 107, .6)'
   // primary: "#70A198",
   // accentDark: '#DA7A7A',
   // nice blue: "#424F5C",

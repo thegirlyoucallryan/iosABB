@@ -1,6 +1,5 @@
 
-
-import { configureStore } from "@reduxjs/toolkit";
+import { ThunkMiddleware, configureStore } from "@reduxjs/toolkit";
 import blackBookReducer from './tricks-redux';
 import userReducer from "./user-redux";
 import thunk from "redux-thunk";
@@ -17,6 +16,9 @@ export const store = configureStore({
         name: authReducer,
         userId: authReducer,
     },
-    middleware: [thunk],
+    middleware: [thunk  ],
 
 })
+
+export type RootState = ReturnType<typeof store.getState>
+export type AppDispatch = typeof store.dispatch

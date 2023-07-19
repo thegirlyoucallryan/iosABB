@@ -6,24 +6,33 @@ import { useSelector } from "react-redux";
 import { Colors } from "~/constants/colors";
 import SearchBar from "../components/SearchBar";
 import { Icon } from "./Icon";
+import { useQuery } from "react-query";
+import { getTricks } from "~/app/queries";
+import { useAppSelector } from "~/app/hooks/hooks";
+import { Trick } from "../../../../packages/store/tricks-redux";
 
-const ListHeader = ({ search }: { search: any }) => {
+const ListHeader = ({
+  search,
+  data,
+}: {
+  search: (Trick: Trick[]) => void;
+  data?: Trick[];
+}) => {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const nav = useNavigation();
-  const tricks = useSelector((state: any) => state.tricks.tricks);
 
-  //filter returns true!!
+  const nav = useNavigation();
 
   useEffect(() => {
-    const trickFilter = tricks.filter(function (item: any) {
+    const trickFilter = data?.filter(function (item: any) {
       if (
         item.title.toLowerCase().includes(searchQuery) ||
         item.type.toLowerCase().includes(searchQuery)
       )
         return true;
     });
-    search(trickFilter);
+ 
+    search(trickFilter!);
   }, [searchQuery]);
 
   const queryHandler = (query: string) => {

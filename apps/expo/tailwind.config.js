@@ -23,8 +23,10 @@ const config = {
       accentLight: "#cdcdcd",
       niceBlue: "#BF5841",
       backgroundGr: "#5555",
+      video: "#2e2e2e",
       primaryGreen: "#70A198",
       primaryGreenLight: "#89B39E",
+      black: '#000'
     },
   },
   content: ["./src/**/*.{ts,tsx}"],
